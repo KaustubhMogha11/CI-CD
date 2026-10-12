@@ -25,5 +25,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Compare default-config.json with previous release
+      - name: Compare default-config.json with previous commit
+        env:
+          PREVIOUS_RELEASE_REF: HEAD~1
         run: npm run compare
