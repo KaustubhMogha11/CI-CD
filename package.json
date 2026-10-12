@@ -1,0 +1,13 @@
+{
+  "name": "config-drift-check",
+  "version": "1.0.0",
+  "description": "Node.js config drift detector for default-config.json",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "compare": "node scripts/compare-config.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
