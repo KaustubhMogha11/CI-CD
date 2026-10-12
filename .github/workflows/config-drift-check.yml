@@ -22,10 +22,78 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install dependencies
-        run: npm install
-
       - name: Compare default-config.json with previous commit
         env:
           PREVIOUS_RELEASE_REF: HEAD~1
-        run: npm run compare
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const { execSync } = require('child_process');
+
+          const configFile = 'default-config.json';
+
+          function flattenJson(value, prefix = '') {
+            const result = {};
+            if (value && typeof value === 'object' && !Array.isArray(value)) {
+              for (const [key, nestedValue] of Object.entries(value)) {
+                const nextKey = prefix ? `${prefix}.${key}` : key;
+                if (nestedValue && typeof nestedValue === 'object' && !Array.isArray(nestedValue)) {
+                  Object.assign(result, flattenJson(nestedValue, nextKey));
+                } else {
+                  result[nextKey] = nestedValue;
+                }
+              }
+              return result;
+            }
+            result[prefix] = value;
+            return result;
+          }
+
+          function readJson(filePath) {
+            return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+          }
+
+          const currentData = readJson(configFile);
+          const previousRef = process.env.PREVIOUS_RELEASE_REF || 'HEAD~1';
+
+          let previousData;
+          try {
+            const previousContent = execSync(`git show ${previousRef}:${configFile}`, { encoding: 'utf8' });
+            previousData = JSON.parse(previousContent);
+          } catch (error) {
+            console.log(`No previous ${configFile} found to compare against. This is likely the first commit or the file does not exist in the previous revision.`);
+            process.exit(0);
+          }
+
+          const oldFlat = flattenJson(previousData);
+          const newFlat = flattenJson(currentData);
+
+          const added = Object.keys(newFlat).filter((key) => !(key in oldFlat)).sort();
+          const removed = Object.keys(oldFlat).filter((key) => !(key in newFlat)).sort();
+          const changed = [];
+
+          for (const key of Object.keys(oldFlat).filter((item) => item in newFlat).sort()) {
+            if (JSON.stringify(oldFlat[key]) !== JSON.stringify(newFlat[key])) {
+              changed.push(`${key}: ${JSON.stringify(oldFlat[key])} -> ${JSON.stringify(newFlat[key])}`);
+            }
+          }
+
+          console.log(`Comparing ${configFile} against ${previousRef}...`);
+          console.log('\nAdded keys');
+          if (added.length === 0) console.log('- None');
+          else added.forEach((item) => console.log(`- ${item}`));
+
+          console.log('\nRemoved keys');
+          if (removed.length === 0) console.log('- None');
+          else removed.forEach((item) => console.log(`- ${item}`));
+
+          console.log('\nChanged values');
+          if (changed.length === 0) console.log('- None');
+          else changed.forEach((item) => console.log(`- ${item}`));
+
+          if (added.length || removed.length || changed.length) {
+            console.log('\nCONFIG CHANGED: values or keys differ from the previous commit.');
+          } else {
+            console.log('\nNo differences detected between current config and previous commit.');
+          }
+          NODE
