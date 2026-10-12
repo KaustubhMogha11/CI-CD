@@ -92,7 +92,7 @@ function compareConfigData(oldData, newData) {
   const changed = [];
   for (const key of Object.keys(oldFlat).filter((item) => item in newFlat).sort()) {
     if (normalizeValue(oldFlat[key]) !== normalizeValue(newFlat[key])) {
-      changed.push(`${key}: ${JSON.stringify(oldFlat[key])} -> ${JSON.stringify(newFlat[key])}`);
+      changed.push(`${key}: ${JSON.stringify(oldFlat[key])} to ${JSON.stringify(newFlat[key])}`);
     }
   }
 
@@ -146,6 +146,16 @@ function compareConfig() {
   };
 }
 
+function buildComparisonResult(result) {
+  const hasDrift = !result.ok;
+
+  return {
+    ...result,
+    status: hasDrift ? 'DRIFT_DETECTED' : 'NO_DRIFT',
+    exitCode: 0,
+  };
+}
+
 function printReport(result) {
   console.log(`Comparing ${CONFIG_FILE} against previous revision...`);
   console.log('\nAdded keys');
@@ -166,7 +176,7 @@ function printReport(result) {
   }
 
   console.log('\nCONFIG CHANGED: values or keys differ from the previous release.');
-  return 1;
+  return result.exitCode;
 }
 
 if (require.main === module) {
@@ -176,11 +186,11 @@ if (require.main === module) {
       console.log(result.message);
       process.exit(0);
     }
-    process.exit(printReport(result));
+    process.exit(printReport(buildComparisonResult(result)));
   } catch (error) {
     console.error(error.message);
     process.exit(1);
   }
 }
 
-module.exports = { compareConfig, compareConfigData, flattenJson };
+module.exports = { compareConfig, compareConfigData, flattenJson, buildComparisonResult };
