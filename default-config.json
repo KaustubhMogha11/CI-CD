@@ -4,7 +4,7 @@
   "barcodeFormatFolder": "C:\\SettingInfo\\BarcodeFormat",
   "bFGroupNumberMobileMaterialCollection": "1",
   "logSaveFolder": "C:\\mobile_log",
-  "saveEventLogEveryDay": "1",
+  "saveEventLogEveryDay": "2",
   "saveSetupLogEveryDay": "1",
   "traceabilityLogSaveFolder": "C:\\traceability",
   "traceabilityFreeDiskRate": "10",
